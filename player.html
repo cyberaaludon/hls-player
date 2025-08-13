@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HLS Player</title>
+  <style>
+    html,body{margin:0;height:100%;background:#000}
+    #wrap{display:flex;align-items:center;justify-content:center;height:100%}
+    video{width:100%;max-width:960px;height:auto;background:#000}
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <video id="video" controls autoplay playsinline></video>
+  </div>
+
+  <!-- hls.js -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+  <script>
+    // 1) Your Cloudflare Worker base:
+    const WORKER_BASE = "https://aaludon.makestepwithme.workers.dev/";
+
+    // 2) The origin HLS (master or variant) URL you want to play:
+    const ORIGIN_HLS = "https://tataplay.slivcdn.com/hls/live/2011749/SABHD/master_3500.m3u8";
+
+    // Build proxied URL using "path style"
+    const PROXIED = WORKER_BASE + encodeURIComponent(ORIGIN_HLS);
+
+    const video = document.getElementById("video");
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 60
+      });
+      hls.loadSource(PROXIED);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log("Levels:", hls.levels.map(l => ({bitrate:l.bitrate, height:l.height})));
+        video.play().catch(()=>{});
+      });
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = PROXIED;
+      video.addEventListener("loadedmetadata", () => video.play().catch(()=>{}));
+    } else {
+      document.body.innerHTML = "<p style='color:#fff;text-align:center'>HLS not supported in this browser.</p>";
+    }
+  </script>
+</body>
+</html>
