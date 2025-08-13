@@ -1,51 +1,49 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>HLS Player</title>
-  <style>
-    html,body{margin:0;height:100%;background:#000}
-    #wrap{display:flex;align-items:center;justify-content:center;height:100vh}
-    video{width:100%;max-width:960px;height:auto;background:#000}
-    #msg{position:fixed;top:10px;left:10px;color:#0f0;font:12px/1.4 monospace}
-  </style>
+    <meta charset="utf-8">
+    <title>HLS Video Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body {
+            background: #000;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            max-height: 100vh;
+            background: black;
+        }
+    </style>
 </head>
 <body>
-  <div id="wrap">
-    <video id="video" controls playsinline></video>
-  </div>
-  <div id="msg"></div>
+    <video id="video" controls autoplay></video>
 
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
-  <script>
-    const WORKER_BASE = "https://aaludon.makestepwithme.workers.dev/"; // <-- put your workers.dev here
+    <script>
+        const video = document.getElementById('video');
+        const streamURL = "https://aaludon.makestepwithme.workers.dev/?url=https://fataplay.slivcdn.com/live/file/2011749/SABHD/master_3500.m3u8";
 
-    // Accept ?src=... (raw m3u8). If missing, set one here for default testing.
-    const q = new URLSearchParams(location.search);
-    const originHls = q.get("src") || "https://tataplay.slivcdn.com/hls/live/2011749/SABHD/master_3500.m3u8";
-
-    // Use path-style so every internal request keeps going through the worker
-    const proxied = WORKER_BASE + encodeURIComponent(originHls);
-
-    const v = document.getElementById("video");
-    const log = (t)=>document.getElementById("msg").textContent = t;
-
-    function start(src) {
-      if (Hls.isSupported()) {
-        const hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 60 });
-        hls.loadSource(src);
-        hls.attachMedia(v);
-
-        hls.on(Hls.Events.MANIFEST_PARSED, () => { log("MANIFEST parsed"); v.play().catch(()=>{}); });
-        hls.on(Hls.Events.ERROR, (_e, data) => { log("HLS error: " + (data && data.details || "unknown")); });
-      } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
-        v.src = src; v.addEventListener("loadedmetadata", () => v.play().catch(()=>{}));
-      } else {
-        log("HLS not supported in this browser.");
-      }
-    }
-    start(proxied);
-  </script>
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(streamURL);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                video.play();
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // For Safari (Native HLS)
+            video.src = streamURL;
+            video.addEventListener('loadedmetadata', function () {
+                video.play();
+            });
+        }
+    </script>
 </body>
 </html>
